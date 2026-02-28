@@ -211,15 +211,6 @@ function Dashboard() {
         </div>
       </div>
 
-      {/* Ticker */}
-      <div style={{ background:"rgba(0,255,170,.04)",border:"1px solid rgba(0,255,170,.14)",borderRadius:10,padding:"9px 0",overflow:"hidden" }}>
-        <div className="ticker-inner" style={{ color:"rgba(0,255,170,.6)",fontFamily:"'JetBrains Mono',monospace",fontSize:11,letterSpacing:".08em",gap:32,paddingLeft:20 }}>
-          {["⬤ 2 meetings auto-detected","⬤ work.alex: 3 high-priority threads","⬤ AI summary generated 08:00 AM","⬤ Stripe billing alert flagged","⬤ Project Deadline: Feb 27 EOD","⬤ Response rate +4% this week","⬤ 203 newsletters paused",
-            "⬤ 2 meetings auto-detected","⬤ work.alex: 3 high-priority threads","⬤ AI summary generated 08:00 AM","⬤ Stripe billing alert flagged","⬤ Project Deadline: Feb 27 EOD","⬤ Response rate +4% this week","⬤ 203 newsletters paused"]
-            .map((item, i) => <span key={i} style={{ whiteSpace:"nowrap" }}>{item}&nbsp;&nbsp;·&nbsp;&nbsp;</span>)}
-        </div>
-      </div>
-
       {/* Stats */}
       <div className="fu d1 stats-grid" style={{ display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(152px,1fr))",gap:14 }}>
         {[
