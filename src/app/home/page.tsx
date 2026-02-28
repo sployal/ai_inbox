@@ -23,7 +23,7 @@ type Summary = DailySummary | WeeklySummary;
 type SettingsKey = "aiSummary"|"autoSchedule"|"notifications"|"darkMode"|"compactView"|"weeklyDigest"|"priorityAlerts"|"analytics";
 type Settings = Record<SettingsKey, boolean>;
 
-// ─── Accent palette (vivid, light-theme safe) ─────────────────────────────────
+// ─── Accent palette ───────────────────────────────────────────────────────────
 const C = {
   green:  "#059669",
   cyan:   "#0284c7",
@@ -31,7 +31,6 @@ const C = {
   pink:   "#db2777",
   amber:  "#d97706",
   red:    "#dc2626",
-  teal:   "#0d9488",
 };
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
@@ -77,9 +76,9 @@ const css = `
   .d1{animation-delay:.07s} .d2{animation-delay:.14s} .d3{animation-delay:.21s} .d4{animation-delay:.28s} .d5{animation-delay:.35s}
 
   .orb { position:fixed;border-radius:50%;pointer-events:none;z-index:0; }
-  .orb1 { width:700px;height:700px;top:-300px;left:-180px;background:radial-gradient(circle,rgba(5,150,105,.12) 0%,transparent 68%);animation:drift 22s ease-in-out infinite; }
-  .orb2 { width:550px;height:550px;bottom:-100px;right:-120px;background:radial-gradient(circle,rgba(124,58,237,.1) 0%,transparent 68%);animation:drift 28s ease-in-out infinite reverse; }
-  .orb3 { width:380px;height:380px;top:38%;left:44%;background:radial-gradient(circle,rgba(2,132,199,.08) 0%,transparent 68%);animation:drift 19s ease-in-out infinite;animation-delay:-7s; }
+  .orb1 { width:700px;height:700px;top:-300px;left:-180px;background:radial-gradient(circle,rgba(5,150,105,.1) 0%,transparent 68%);animation:drift 22s ease-in-out infinite; }
+  .orb2 { width:550px;height:550px;bottom:-100px;right:-120px;background:radial-gradient(circle,rgba(124,58,237,.08) 0%,transparent 68%);animation:drift 28s ease-in-out infinite reverse; }
+  .orb3 { width:380px;height:380px;top:38%;left:44%;background:radial-gradient(circle,rgba(2,132,199,.07) 0%,transparent 68%);animation:drift 19s ease-in-out infinite;animation-delay:-7s; }
 
   .glass  { background:#ffffff; border:1px solid #e2e8f0; }
   .inset  { box-shadow:0 1px 3px rgba(0,0,0,.05),0 4px 20px rgba(0,0,0,.06); }
@@ -100,16 +99,23 @@ const css = `
   .sbar  { width:4px;min-height:4px;border-radius:2px 2px 0 0; }
   .live::before { content:'';position:absolute;inset:-3px;border-radius:50%;background:inherit;animation:pulseRing 2s ease-out infinite; }
 
+  /* ── Sidebar (light) ── */
+  .sidebar-light {
+    background:linear-gradient(160deg,#0f766e 0%,#059669 45%,#0284c7 100%);
+    border-right:none;
+    box-shadow:4px 0 28px rgba(5,150,105,.25);
+  }
   .nav-btn {
     display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;border-radius:10px;cursor:pointer;
     font-size:13px;font-weight:500;transition:all .2s;border:1px solid transparent;background:transparent;
-    color:rgba(255,255,255,.5);text-align:left;font-family:'Space Grotesk',sans-serif;
+    color:rgba(255,255,255,.65);text-align:left;font-family:'Space Grotesk',sans-serif;
   }
-  .nav-btn:hover { color:#fff;background:rgba(255,255,255,.09); }
-  .nav-active    { background:rgba(5,150,105,.22)!important;border-color:rgba(5,150,105,.4)!important;color:#fff!important; }
+  .nav-btn:hover { color:#fff;background:rgba(255,255,255,.15); }
+  .nav-active    { background:rgba(255,255,255,.22)!important;border-color:rgba(255,255,255,.35)!important;color:#fff!important; }
   .trrow td      { transition:background .15s; }
   .trrow:hover td{ background:#f8fafc; }
 
+  /* ── Bottom nav ── */
   .bottom-nav {
     display:none;position:fixed;bottom:0;left:0;right:0;z-index:100;
     background:rgba(255,255,255,.97);border-top:1px solid #e2e8f0;
@@ -155,10 +161,29 @@ function Tag({ children, color }: { children: React.ReactNode; color: string }) 
   return <span className="tag" style={{ background:`${color}18`,color,border:`1px solid ${color}40` }}>{children}</span>;
 }
 
+// ─── Clock — client-only to avoid SSR hydration mismatch ─────────────────────
+function LiveClock() {
+  const [mounted, setMounted] = useState(false);
+  const [time,    setTime]    = useState("");
+
+  useEffect(() => {
+    setMounted(true);
+    const fmt = () =>
+      new Date().toLocaleTimeString("en-US", { hour:"2-digit", minute:"2-digit", second:"2-digit" });
+    setTime(fmt());
+    const t = setInterval(() => setTime(fmt()), 1000);
+    return () => clearInterval(t);
+  }, []);
+
+  return (
+    <p className="fm" style={{ fontSize:26,color:"#1e2535",letterSpacing:"-.02em",minWidth:160,textAlign:"right" }}>
+      {mounted ? time : "──:──:── ──"}
+    </p>
+  );
+}
+
 // ─── Dashboard ────────────────────────────────────────────────────────────────
 function Dashboard() {
-  const [time, setTime] = useState(new Date());
-  useEffect(() => { const t = setInterval(() => setTime(new Date()), 1000); return () => clearInterval(t); }, []);
   const spark = [14,22,18,31,27,9,35,28,19,42,38,31,27,45];
 
   return (
@@ -172,14 +197,14 @@ function Dashboard() {
           </h1>
           <p style={{ fontSize:13,color:"#64748b",marginTop:12 }}>Friday, February 27 · Your inboxes are active and monitored.</p>
         </div>
-        <div style={{ padding:"16px 22px",borderRadius:16,textAlign:"right",background:"linear-gradient(135deg,#1e2535,#2d3654)",boxShadow:"0 4px 20px rgba(30,37,53,.25)" }}>
-          <p className="fm" style={{ fontSize:26,color:"#fff",letterSpacing:"-.02em" }}>
-            {time.toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit",second:"2-digit"})}
-          </p>
-          <p className="fm" style={{ fontSize:9,color:"rgba(255,255,255,.4)",marginTop:4,letterSpacing:".12em" }}>SYSTEM CLOCK · UTC+0</p>
+
+        {/* Clock card — fully light */}
+        <div className="glass inset" style={{ padding:"18px 24px",borderRadius:16,textAlign:"right",background:"linear-gradient(135deg,#f0fdf8,#ecfdf5)",borderColor:`${C.green}30` }}>
+          <p className="fm" style={{ fontSize:9,color:"#94a3b8",letterSpacing:".18em",marginBottom:8 }}>SYSTEM CLOCK · UTC+0</p>
+          <LiveClock />
           <div style={{ display:"flex",alignItems:"center",gap:6,justifyContent:"flex-end",marginTop:10 }}>
             <span className="live" style={{ position:"relative",width:7,height:7,borderRadius:"50%",background:C.green,display:"inline-block" }}/>
-            <span className="fm" style={{ fontSize:9,color:C.green,letterSpacing:".1em" }}>GROQ · CONNECTED</span>
+            <span className="fm" style={{ fontSize:9,color:C.green,letterSpacing:".1em",fontWeight:600 }}>GROQ · CONNECTED</span>
           </div>
         </div>
       </div>
@@ -211,7 +236,7 @@ function Dashboard() {
 
       {/* Summary + Activity */}
       <div className="fu d2 col2" style={{ display:"grid",gridTemplateColumns:"1fr 300px",gap:20 }}>
-        <div className="glass inset" style={{ borderRadius:20,padding:28,borderColor:`${C.green}30`,background:`${C.green}05` }}>
+        <div className="glass inset" style={{ borderRadius:20,padding:28,borderColor:`${C.green}30`,background:`${C.green}04` }}>
           <div style={{ display:"flex",alignItems:"center",gap:12,marginBottom:20 }}>
             <div style={{ width:38,height:38,borderRadius:12,background:`${C.green}18`,border:`1px solid ${C.green}40`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:17 }}>✦</div>
             <div style={{ flex:1 }}>
@@ -230,9 +255,9 @@ function Dashboard() {
           <div style={{ marginTop:20,padding:"14px 16px",borderRadius:12,background:"#f8fafc",border:"1px solid #e2e8f0" }}>
             <p className="fm" style={{ fontSize:9,color:"#94a3b8",marginBottom:10,letterSpacing:".12em" }}>AI DETECTED ACTIONS</p>
             {[
-              { icon:"📅", text:"Zoom call at 2:00 PM auto-added to calendar",   color:C.cyan  },
-              { icon:"📅", text:"Google Meet at 4:30 PM auto-added to calendar",  color:C.cyan  },
-              { icon:"⚠️", text:"Stripe billing alert — action recommended",      color:C.amber },
+              { icon:"📅", text:"Zoom call at 2:00 PM auto-added to calendar",  color:C.cyan  },
+              { icon:"📅", text:"Google Meet at 4:30 PM auto-added to calendar", color:C.cyan  },
+              { icon:"⚠️", text:"Stripe billing alert — action recommended",     color:C.amber },
             ].map((a, i) => (
               <div key={i} style={{ display:"flex",alignItems:"center",gap:10,marginTop:i>0?8:0 }}>
                 <span style={{ fontSize:13 }}>{a.icon}</span>
@@ -262,7 +287,7 @@ function Dashboard() {
             <div key={i} style={{ display:"flex",gap:10,padding:"9px 10px 9px 12px",borderRadius:8,borderLeft:`2px solid ${a.border}`,marginBottom:2,transition:"background .2s",cursor:"default" }}
               onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = "#f8fafc"}
               onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = "transparent"}>
-              <div style={{ width:26,height:26,borderRadius:7,background:`${a.color}15`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:12 }}>
+              <div style={{ width:26,height:26,borderRadius:7,background:`${a.color}15`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:12,color:a.color }}>
                 {a.type==="email"?"✉":a.type==="ai"?"✦":a.type==="cal"?"◫":"⟳"}
               </div>
               <div style={{ flex:1,minWidth:0 }}>
@@ -275,7 +300,7 @@ function Dashboard() {
       </div>
 
       {/* Weekly Digest */}
-      <div className="fu d3 glass inset" style={{ borderRadius:20,padding:28,borderColor:`${C.purple}30`,background:`${C.purple}04` }}>
+      <div className="fu d3 glass inset" style={{ borderRadius:20,padding:28,borderColor:`${C.purple}28`,background:`${C.purple}04` }}>
         <div style={{ display:"flex",alignItems:"center",gap:12,marginBottom:20 }}>
           <div style={{ width:38,height:38,borderRadius:12,background:`${C.purple}18`,border:`1px solid ${C.purple}40`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:17 }}>◈</div>
           <div style={{ flex:1 }}>
@@ -320,7 +345,7 @@ function Dashboard() {
             { title:"Investor Call",      time:"Fri Mar 1 · 3:30 PM", via:"Zoom",        account:"work.alex@gmail.com", color:C.purple, status:"scheduled" },
           ].map((m, i) => (
             <div key={i} className="glass inset ghover" style={{ display:"flex",alignItems:"center",gap:16,padding:"16px 20px",borderRadius:14,cursor:"default" }}>
-              <div style={{ width:8,height:8,borderRadius:"50%",background:m.color,boxShadow:`0 0 8px ${m.color}80`,flexShrink:0 }}/>
+              <div style={{ width:8,height:8,borderRadius:"50%",background:m.color,flexShrink:0 }}/>
               <div style={{ flex:1 }}>
                 <p style={{ fontSize:14,color:"#1e2535",fontWeight:500 }}>{m.title}</p>
                 <p style={{ fontSize:12,color:"#64748b",marginTop:2 }}>{m.time} · via {m.via}</p>
@@ -445,7 +470,7 @@ function CalendarSection() {
           <div className="divider" style={{ marginBottom:20 }}/>
           {events.length===0 ? (
             <div style={{ textAlign:"center",padding:"44px 0" }}>
-              <p style={{ fontSize:32,marginBottom:12,opacity:.15 }}>◌</p>
+              <p style={{ fontSize:32,marginBottom:12,opacity:.15,color:"#94a3b8" }}>◌</p>
               <p style={{ fontSize:13,color:"#94a3b8" }}>No events this day</p>
             </div>
           ) : events.map((ev: CalendarEvent) => (
@@ -506,9 +531,9 @@ function AccountsSection() {
       <PageHead title="Accounts" />
       <div className="fu d1 col3" style={{ display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:14 }}>
         {[
-          { label:"Total Connected",    value:"3",   color:C.green  },
-          { label:"Currently Tracking", value:"2",   color:C.cyan   },
-          { label:"Total Unread",       value:"262", color:C.pink   },
+          { label:"Total Connected",    value:"3",   color:C.green },
+          { label:"Currently Tracking", value:"2",   color:C.cyan  },
+          { label:"Total Unread",       value:"262", color:C.pink  },
         ].map((m, i) => (
           <div key={i} className="glass inset" style={{ padding:"18px 20px",borderRadius:14,textAlign:"center" }}>
             <p className="fd" style={{ fontSize:32,color:m.color }}>{m.value}</p>
@@ -753,38 +778,42 @@ export default function Page() {
       <div style={{ minHeight:"100vh",background:"#f0f4f9",display:"flex",overflow:"hidden",position:"relative" }}>
         <div className="orb orb1"/><div className="orb orb2"/><div className="orb orb3"/>
 
-        {/* ── Sidebar — deep navy, high contrast ── */}
-        <aside className="sidebar" style={{ position:"fixed",top:0,left:0,bottom:0,width:220,zIndex:50,display:"flex",flexDirection:"column",background:"#1e2535",padding:"28px 16px",boxShadow:"4px 0 28px rgba(0,0,0,.14)" }}>
+        {/* ── Sidebar — fully light ── */}
+        <aside className="sidebar sidebar-light" style={{ position:"fixed",top:0,left:0,bottom:0,width:220,zIndex:50,display:"flex",flexDirection:"column",padding:"28px 16px" }}>
+
+          {/* Logo */}
           <div style={{ display:"flex",alignItems:"center",gap:12,padding:"0 8px",marginBottom:36 }}>
-            <div style={{ width:38,height:38,borderRadius:12,background:`linear-gradient(135deg,${C.green},#047857)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,boxShadow:`0 4px 16px ${C.green}55`,color:"#fff",fontWeight:700 }}>✉</div>
+            <div style={{ width:38,height:38,borderRadius:12,background:"rgba(255,255,255,.25)",border:"1px solid rgba(255,255,255,.4)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,color:"#fff",fontWeight:700 }}>✉</div>
             <div>
               <p className="fd" style={{ fontSize:17,color:"#fff",fontWeight:700,letterSpacing:"-.02em" }}>InboxAI</p>
-              <p className="fm" style={{ fontSize:9,color:C.green,letterSpacing:".12em",opacity:.85 }}>POWERED BY GROQ</p>
+              <p className="fm" style={{ fontSize:9,color:"rgba(255,255,255,.7)",letterSpacing:".12em",fontWeight:600 }}>POWERED BY GROQ</p>
             </div>
           </div>
 
+          {/* Nav links */}
           <nav style={{ flex:1,display:"flex",flexDirection:"column",gap:2 }}>
-            <p className="fm" style={{ fontSize:9,color:"rgba(255,255,255,.2)",letterSpacing:".15em",padding:"0 12px",marginBottom:8 }}>NAVIGATION</p>
+            <p className="fm" style={{ fontSize:9,color:"rgba(255,255,255,.45)",letterSpacing:".15em",padding:"0 12px",marginBottom:8 }}>NAVIGATION</p>
             {nav.map(n => (
               <button key={n.id} onClick={() => go(n.id)} className={`nav-btn ${active===n.id?"nav-active":""}`}>
-                <span style={{ fontSize:16,color:active===n.id?C.green:"inherit",transition:"color .2s" }}>{n.icon}</span>
+                <span style={{ fontSize:16,color:active===n.id?"#fff":"rgba(255,255,255,.6)",transition:"color .2s" }}>{n.icon}</span>
                 {n.label}
-                {active===n.id && <span style={{ marginLeft:"auto",width:5,height:5,borderRadius:"50%",background:C.green,display:"inline-block",boxShadow:`0 0 8px ${C.green}` }}/>}
+                {active===n.id && <span style={{ marginLeft:"auto",width:5,height:5,borderRadius:"50%",background:"#fff",display:"inline-block",opacity:.9 }}/>}
               </button>
             ))}
           </nav>
 
-          <div style={{ height:1,background:"rgba(255,255,255,.1)",margin:"20px 8px" }}/>
+          <div style={{ height:1,background:"rgba(255,255,255,.2)",margin:"20px 8px" }}/>
 
+          {/* Active inboxes */}
           <div>
-            <p className="fm" style={{ fontSize:9,color:"rgba(255,255,255,.2)",letterSpacing:".14em",padding:"0 4px",marginBottom:10 }}>ACTIVE INBOXES</p>
+            <p className="fm" style={{ fontSize:9,color:"rgba(255,255,255,.45)",letterSpacing:".14em",padding:"0 4px",marginBottom:10 }}>ACTIVE INBOXES</p>
             {ACCOUNTS.filter(a => a.tracking).map(a => (
               <div key={a.id} style={{ display:"flex",alignItems:"center",gap:8,padding:"7px 8px",borderRadius:8,cursor:"pointer",transition:"background .2s" }}
-                onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = "rgba(255,255,255,.07)"}
+                onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = "rgba(255,255,255,.15)"}
                 onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = "transparent"}>
-                <div style={{ width:26,height:26,borderRadius:8,background:`${a.color}25`,border:`1px solid ${a.color}55`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:a.color,flexShrink:0 }}>{a.avatar}</div>
-                <p className="fm" style={{ fontSize:11,color:"rgba(255,255,255,.45)",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",flex:1 }}>{a.email}</p>
-                {a.unread>0 && <span className="fm" style={{ fontSize:10,color:a.color,background:`${a.color}22`,padding:"1px 5px",borderRadius:4,flexShrink:0,fontWeight:600 }}>{a.unread}</span>}
+                <div style={{ width:26,height:26,borderRadius:8,background:"rgba(255,255,255,.22)",border:"1px solid rgba(255,255,255,.35)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:"#fff",flexShrink:0 }}>{a.avatar}</div>
+                <p className="fm" style={{ fontSize:11,color:"rgba(255,255,255,.7)",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",flex:1 }}>{a.email}</p>
+                {a.unread>0 && <span className="fm" style={{ fontSize:10,color:"#fff",background:"rgba(255,255,255,.25)",padding:"1px 6px",borderRadius:4,flexShrink:0,fontWeight:600,border:"1px solid rgba(255,255,255,.3)" }}>{a.unread}</span>}
               </div>
             ))}
           </div>
