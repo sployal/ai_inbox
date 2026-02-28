@@ -104,7 +104,18 @@ const css = `
     background:linear-gradient(160deg,#0f766e 0%,#059669 45%,#0284c7 100%);
     border-right:none;
     box-shadow:4px 0 28px rgba(5,150,105,.25);
+    transition:width .28s cubic-bezier(.4,0,.2,1);
+    overflow:hidden;
   }
+  .sb-label { transition:opacity .2s,max-width .25s; white-space:nowrap; overflow:hidden; }
+  .sb-collapsed .sb-label { opacity:0; max-width:0; }
+  .collapse-btn {
+    width:28px;height:28px;border-radius:8px;border:1px solid rgba(255,255,255,.35);
+    background:rgba(255,255,255,.18);color:#fff;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    font-size:14px;transition:background .2s;flex-shrink:0;line-height:1;
+  }
+  .collapse-btn:hover { background:rgba(255,255,255,.32); }
   .nav-btn {
     display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;border-radius:10px;cursor:pointer;
     font-size:13px;font-weight:500;transition:all .2s;border:1px solid transparent;background:transparent;
@@ -409,92 +420,141 @@ function CalendarSection() {
   const [month, setMonth] = useState(today.getMonth());
   const [sel,   setSel]   = useState(today.getDate());
 
-  const dim   = getDaysInMonth(year, month);
-  const fd    = getFirstDay(year, month);
-  const cells = Array.from({ length: fd + dim }, (_, i) => i < fd ? null : i - fd + 1);
+  const dim    = getDaysInMonth(year, month);
+  const fd     = getFirstDay(year, month);
+  const cells  = Array.from({ length: fd + dim }, (_, i) => i < fd ? null : i - fd + 1);
   const events: CalendarEvent[] = CALENDAR_DATA[sel] ?? [];
 
   function prev() { month===0 ? (setMonth(11),setYear(y=>y-1)) : setMonth(m=>m-1); }
   function next() { month===11? (setMonth(0), setYear(y=>y+1)) : setMonth(m=>m+1); }
 
+  // type icon map
+  const typeIcon: Record<string,string> = { meeting:"📅", deadline:"🚨", summary:"✦" };
+
   return (
     <Section>
       <PageHead title="Calendar" />
-      <div className="fu d1 col2" style={{ display:"grid",gridTemplateColumns:"1fr 280px",gap:22,alignItems:"start" }}>
-        <div className="glass inset" style={{ borderRadius:20,padding:28 }}>
-          <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:28 }}>
-            <button onClick={prev} style={{ width:36,height:36,borderRadius:10,background:"#f1f5f9",border:"1px solid #e2e8f0",color:"#1e2535",cursor:"pointer",fontSize:18,transition:"all .2s" }}
-              onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background="#e2e8f0"}
-              onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background="#f1f5f9"}>‹</button>
-            <div style={{ textAlign:"center" }}>
-              <p className="fd" style={{ fontSize:22,color:"#1e2535",fontWeight:700 }}>{MONTHS[month]}</p>
-              <p className="fm" style={{ fontSize:11,color:"#94a3b8",marginTop:2 }}>{year}</p>
+
+      {/* ── Calendar grid + selected date side by side ── */}
+      <div className="fu d1" style={{ display:"grid",gridTemplateColumns:"1fr 290px",gap:20,alignItems:"start" }}>
+
+        {/* Left: main calendar */}
+        <div style={{ borderRadius:24,overflow:"hidden",boxShadow:"0 8px 40px rgba(5,150,105,.13),0 2px 8px rgba(0,0,0,.06)" }}>
+
+          {/* Header strip */}
+          <div style={{ background:"linear-gradient(135deg,#0f766e,#059669,#0284c7)",padding:"28px 32px 24px" }}>
+            <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between" }}>
+              <button onClick={prev} style={{ width:38,height:38,borderRadius:12,background:"rgba(255,255,255,.2)",border:"1px solid rgba(255,255,255,.3)",color:"#fff",cursor:"pointer",fontSize:20,transition:"all .2s",display:"flex",alignItems:"center",justifyContent:"center" }}
+                onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background="rgba(255,255,255,.32)"}
+                onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background="rgba(255,255,255,.2)"}>‹</button>
+              <div style={{ textAlign:"center" }}>
+                <p className="fm" style={{ fontSize:10,color:"rgba(255,255,255,.6)",letterSpacing:".18em",marginBottom:4 }}>{year}</p>
+                <p className="fd" style={{ fontSize:32,color:"#fff",fontWeight:700,letterSpacing:"-.02em" }}>{MONTHS[month]}</p>
+              </div>
+              <button onClick={next} style={{ width:38,height:38,borderRadius:12,background:"rgba(255,255,255,.2)",border:"1px solid rgba(255,255,255,.3)",color:"#fff",cursor:"pointer",fontSize:20,transition:"all .2s",display:"flex",alignItems:"center",justifyContent:"center" }}
+                onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background="rgba(255,255,255,.32)"}
+                onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background="rgba(255,255,255,.2)"}>›</button>
             </div>
-            <button onClick={next} style={{ width:36,height:36,borderRadius:10,background:"#f1f5f9",border:"1px solid #e2e8f0",color:"#1e2535",cursor:"pointer",fontSize:18,transition:"all .2s" }}
-              onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background="#e2e8f0"}
-              onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background="#f1f5f9"}>›</button>
+            <div style={{ display:"grid",gridTemplateColumns:"repeat(7,1fr)",marginTop:24,gap:4 }}>
+              {DAYS.map(d => (
+                <div key={d} className="fm" style={{ textAlign:"center",fontSize:9,color:"rgba(255,255,255,.55)",letterSpacing:".12em",padding:"4px 0" }}>{d}</div>
+              ))}
+            </div>
           </div>
-          <div style={{ display:"grid",gridTemplateColumns:"repeat(7,1fr)",marginBottom:8 }}>
-            {DAYS.map(d => <div key={d} className="fm" style={{ textAlign:"center",fontSize:9,color:"#94a3b8",letterSpacing:".1em",padding:"6px 0" }}>{d}</div>)}
+
+          {/* Day cells */}
+          <div style={{ background:"#fff",padding:"16px 20px 24px" }}>
+            <div style={{ display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:6 }}>
+              {cells.map((day, i) => {
+                if (!day) return <div key={i}/>;
+                const evts: CalendarEvent[] = CALENDAR_DATA[day] ?? [];
+                const isToday = day===today.getDate()&&month===today.getMonth()&&year===today.getFullYear();
+                const isSel   = day===sel;
+                return (
+                  <button key={i} onClick={() => setSel(day)}
+                    style={{
+                      aspectRatio:"1",borderRadius:14,display:"flex",flexDirection:"column",
+                      alignItems:"center",justifyContent:"center",cursor:"pointer",
+                      transition:"all .18s",gap:4,padding:4,border:"none",
+                      background: isSel ? "linear-gradient(135deg,#059669,#0284c7)" : isToday ? "#f0fdf8" : "transparent",
+                      boxShadow: isSel ? "0 4px 16px rgba(5,150,105,.35)" : "none",
+                      outline: isToday && !isSel ? `2px solid ${C.green}` : "none",
+                    }}
+                    onMouseEnter={e => { if(!isSel) (e.currentTarget as HTMLButtonElement).style.background="#f0f9ff"; }}
+                    onMouseLeave={e => { if(!isSel) (e.currentTarget as HTMLButtonElement).style.background=isToday?"#f0fdf8":"transparent"; }}>
+                    <span style={{ fontSize:13,fontWeight:isSel||isToday?700:400,color:isSel?"#fff":isToday?C.green:"#475569",lineHeight:1 }}>{day}</span>
+                    {evts.length>0 && (
+                      <div style={{ display:"flex",gap:3,justifyContent:"center" }}>
+                        {evts.slice(0,3).map((ev: CalendarEvent, ei: number) => (
+                          <span key={ei} style={{ width:5,height:5,borderRadius:"50%",background:isSel?"rgba(255,255,255,.8)":ev.color,boxShadow:isSel?`0 0 4px rgba(255,255,255,.6)`:`0 0 4px ${ev.color}60` }}/>
+                        ))}
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Legend */}
+            <div style={{ display:"flex",gap:18,marginTop:20,paddingTop:16,borderTop:"1px solid #f1f5f9",justifyContent:"center" }}>
+              {[{label:"Meeting",color:C.cyan},{label:"Deadline",color:C.red},{label:"Summary",color:C.green}].map(l => (
+                <div key={l.label} style={{ display:"flex",alignItems:"center",gap:6 }}>
+                  <span style={{ width:8,height:8,borderRadius:"50%",background:l.color,boxShadow:`0 0 6px ${l.color}60` }}/>
+                  <span className="fm" style={{ fontSize:10,color:"#64748b",fontWeight:500 }}>{l.label}</span>
+                </div>
+              ))}
+            </div>
           </div>
-          <div style={{ display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:4 }}>
-            {cells.map((day, i) => {
-              if (!day) return <div key={i}/>;
-              const evts: CalendarEvent[] = CALENDAR_DATA[day] ?? [];
-              const isToday = day===today.getDate()&&month===today.getMonth()&&year===today.getFullYear();
-              const isSel   = day===sel;
-              return (
-                <button key={i} onClick={() => setSel(day)} style={{ aspectRatio:"1",borderRadius:10,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",cursor:"pointer",transition:"all .18s",border:isToday?`1.5px solid ${C.green}`:isSel?"1px solid #cbd5e1":"1px solid transparent",background:isSel?`${C.green}12`:isToday?`${C.green}08`:"transparent",gap:3,padding:4 }}
-                  onMouseEnter={e => { if(!isSel) (e.currentTarget as HTMLButtonElement).style.background="#f1f5f9"; }}
-                  onMouseLeave={e => { if(!isSel) (e.currentTarget as HTMLButtonElement).style.background="transparent"; }}>
-                  <span style={{ fontSize:12,fontWeight:isToday?700:400,color:isToday?C.green:isSel?"#1e2535":"#475569" }}>{day}</span>
-                  {evts.length>0 && <div style={{ display:"flex",gap:2 }}>{evts.slice(0,3).map((ev: CalendarEvent, ei: number) => <span key={ei} style={{ width:4,height:4,borderRadius:"50%",background:ev.color }}/>)}</div>}
-                </button>
-              );
-            })}
+        </div>
+
+        {/* Right: selected date panel */}
+        <div style={{ borderRadius:20,overflow:"hidden",boxShadow:"0 4px 24px rgba(0,0,0,.07)" }}>
+          <div style={{ background:"linear-gradient(135deg,#f0fdf8,#e0f2fe)",padding:"20px 24px",borderBottom:"1px solid #e2e8f0" }}>
+            <p className="fm" style={{ fontSize:9,color:"#94a3b8",letterSpacing:".15em",marginBottom:4 }}>SELECTED DATE</p>
+            <div style={{ display:"flex",alignItems:"baseline",gap:8 }}>
+              <p className="fd" style={{ fontSize:36,color:"#1e2535",fontWeight:700,lineHeight:1 }}>{sel}</p>
+              <p className="fd" style={{ fontSize:18,color:"#64748b",fontStyle:"italic" }}>{MONTHS[month]}</p>
+            </div>
+            <p className="fm" style={{ fontSize:10,color:"#94a3b8",marginTop:4 }}>{events.length} event{events.length!==1?"s":""}</p>
           </div>
-          <div className="divider" style={{ margin:"20px 0" }}/>
-          <div style={{ display:"flex",gap:20 }}>
-            {[{label:"Meeting",color:C.cyan},{label:"Deadline",color:C.red},{label:"Summary",color:C.green}].map(l => (
-              <div key={l.label} style={{ display:"flex",alignItems:"center",gap:6 }}>
-                <span style={{ width:6,height:6,borderRadius:"50%",background:l.color }}/>
-                <span className="fm" style={{ fontSize:10,color:"#64748b" }}>{l.label}</span>
+          <div style={{ background:"#fff",padding:"16px" }}>
+            {events.length===0 ? (
+              <div style={{ textAlign:"center",padding:"32px 0" }}>
+                <p style={{ fontSize:28,marginBottom:8,opacity:.2 }}>📭</p>
+                <p style={{ fontSize:13,color:"#94a3b8",fontWeight:500 }}>No events scheduled</p>
+                <p style={{ fontSize:11,color:"#cbd5e1",marginTop:4 }}>Enjoy your free day</p>
+              </div>
+            ) : events.map((ev: CalendarEvent) => (
+              <div key={ev.id} style={{ marginBottom:12,borderRadius:16,overflow:"hidden",border:`1px solid ${ev.color}25`,boxShadow:`0 2px 12px ${ev.color}12` }}>
+                <div style={{ height:4,background:`linear-gradient(90deg,${ev.color},${ev.color}88)` }}/>
+                <div style={{ padding:"14px 16px",background:`${ev.color}05` }}>
+                  <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8 }}>
+                    <Tag color={ev.color}>{ev.type}</Tag>
+                    <span style={{ fontSize:16 }}>{typeIcon[ev.type] ?? "📌"}</span>
+                  </div>
+                  <p style={{ fontSize:14,color:"#1e2535",fontWeight:600 }}>{ev.title}</p>
+                  <p className="fm" style={{ fontSize:11,color:"#64748b",marginTop:4 }}>🕐 {ev.time}</p>
+                  <p className="fm" style={{ fontSize:10,color:ev.color,marginTop:3,fontWeight:600 }}>{ev.account}</p>
+                  {ev.link && (
+                    <a href={ev.link} target="_blank" rel="noreferrer"
+                      style={{ display:"inline-flex",alignItems:"center",gap:6,marginTop:12,fontSize:12,color:"#fff",textDecoration:"none",padding:"7px 14px",borderRadius:10,background:`linear-gradient(135deg,${ev.color},${ev.color}cc)`,fontFamily:"Space Grotesk,sans-serif",fontWeight:600,boxShadow:`0 3px 12px ${ev.color}40` }}>
+                      ↗ Join Meeting
+                    </a>
+                  )}
+                </div>
               </div>
             ))}
           </div>
         </div>
-
-        <div className="glass inset" style={{ borderRadius:20,padding:24 }}>
-          <p className="fm" style={{ fontSize:9,color:"#94a3b8",letterSpacing:".15em",marginBottom:4 }}>SELECTED</p>
-          <p className="fd" style={{ fontSize:28,color:"#1e2535",fontWeight:700,marginBottom:20 }}>{MONTHS[month].slice(0,3)} {sel}</p>
-          <div className="divider" style={{ marginBottom:20 }}/>
-          {events.length===0 ? (
-            <div style={{ textAlign:"center",padding:"44px 0" }}>
-              <p style={{ fontSize:32,marginBottom:12,opacity:.15,color:"#94a3b8" }}>◌</p>
-              <p style={{ fontSize:13,color:"#94a3b8" }}>No events this day</p>
-            </div>
-          ) : events.map((ev: CalendarEvent) => (
-            <div key={ev.id} style={{ padding:16,borderRadius:14,background:`${ev.color}08`,border:`1px solid ${ev.color}30`,marginBottom:10 }}>
-              <div style={{ display:"flex",alignItems:"center",gap:8,marginBottom:8 }}>
-                <span style={{ width:6,height:6,borderRadius:"50%",background:ev.color,flexShrink:0 }}/>
-                <Tag color={ev.color}>{ev.type}</Tag>
-              </div>
-              <p style={{ fontSize:14,color:"#1e2535",fontWeight:500 }}>{ev.title}</p>
-              <p className="fm" style={{ fontSize:11,color:"#64748b",marginTop:4 }}>{ev.time}</p>
-              <p className="fm" style={{ fontSize:10,color:ev.color,marginTop:4 }}>{ev.account}</p>
-              {ev.link && (
-                <a href={ev.link} target="_blank" rel="noreferrer" className="fm" style={{ display:"inline-flex",alignItems:"center",gap:6,marginTop:10,fontSize:11,color:ev.color,textDecoration:"none",padding:"5px 10px",borderRadius:8,border:`1px solid ${ev.color}35`,background:`${ev.color}0e` }}>
-                  ↗ Join Meeting
-                </a>
-              )}
-            </div>
-          ))}
-        </div>
       </div>
 
-      <div className="fu d2">
-        <p className="fm" style={{ fontSize:9,color:"#94a3b8",letterSpacing:".15em",marginBottom:14 }}>UPCOMING THIS MONTH</p>
-        <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
+      {/* ── Upcoming this month ── */}
+      <div className="fu d2" style={{ borderRadius:20,overflow:"hidden",boxShadow:"0 4px 24px rgba(0,0,0,.07)" }}>
+        <div style={{ background:"linear-gradient(135deg,#faf5ff,#eff6ff)",padding:"20px 24px",borderBottom:"1px solid #e2e8f0" }}>
+          <p className="fm" style={{ fontSize:9,color:"#94a3b8",letterSpacing:".15em",marginBottom:4 }}>UPCOMING</p>
+          <p className="fd" style={{ fontSize:22,color:"#1e2535",fontWeight:700 }}>This Month</p>
+        </div>
+        <div style={{ background:"#fff",padding:"12px",display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:8 }}>
           {[
             { title:"Q1 Review",        date:"Mar 3",  time:"10:00 AM", type:"meeting",  color:C.cyan   },
             { title:"Design Sync",      date:"Mar 11", time:"2:00 PM",  type:"meeting",  color:C.cyan   },
@@ -502,17 +562,18 @@ function CalendarSection() {
             { title:"1:1 with Manager", date:"Mar 18", time:"11:00 AM", type:"meeting",  color:C.cyan   },
             { title:"Product Demo",     date:"Mar 25", time:"3:00 PM",  type:"meeting",  color:C.purple },
           ].map((ev, i) => (
-            <div key={i} className="glass ghover" style={{ display:"flex",alignItems:"center",gap:16,padding:"14px 20px",borderRadius:14,cursor:"default" }}>
-              <div style={{ width:48,textAlign:"center" }}>
-                <p className="fm" style={{ fontSize:9,color:"#94a3b8",letterSpacing:".1em" }}>MAR</p>
-                <p className="fd" style={{ fontSize:22,color:"#1e2535",lineHeight:1 }}>{ev.date.split(" ")[1]}</p>
+            <div key={i} style={{ display:"flex",alignItems:"center",gap:12,padding:"10px 12px",borderRadius:12,transition:"background .2s",cursor:"default",background:"transparent",border:`1px solid ${ev.color}15` }}
+              onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background=`${ev.color}08`}
+              onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background="transparent"}>
+              <div style={{ width:44,height:44,borderRadius:12,background:`${ev.color}12`,border:`1px solid ${ev.color}30`,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",flexShrink:0 }}>
+                <p className="fm" style={{ fontSize:8,color:ev.color,letterSpacing:".08em",lineHeight:1,fontWeight:600 }}>{ev.date.split(" ")[0].toUpperCase()}</p>
+                <p className="fd" style={{ fontSize:18,color:ev.color,lineHeight:1,fontWeight:700 }}>{ev.date.split(" ")[1]}</p>
               </div>
-              <div style={{ width:1,height:32,background:`${ev.color}60`,flexShrink:0 }}/>
-              <div style={{ flex:1 }}>
-                <p style={{ fontSize:14,color:"#1e2535",fontWeight:500 }}>{ev.title}</p>
-                <p className="fm" style={{ fontSize:11,color:"#64748b",marginTop:2 }}>{ev.time}</p>
+              <div style={{ flex:1,minWidth:0 }}>
+                <p style={{ fontSize:13,color:"#1e2535",fontWeight:600,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis" }}>{ev.title}</p>
+                <p className="fm" style={{ fontSize:10,color:"#94a3b8",marginTop:2 }}>{ev.time}</p>
               </div>
-              <Tag color={ev.color}>{ev.type}</Tag>
+              <span style={{ width:8,height:8,borderRadius:"50%",background:ev.color,flexShrink:0,boxShadow:`0 0 6px ${ev.color}80` }}/>
             </div>
           ))}
         </div>
@@ -759,8 +820,11 @@ function SettingsSection() {
 
 // ─── Root ─────────────────────────────────────────────────────────────────────
 export default function Page() {
-  const [active, setActive] = useState("dashboard");
-  const [key,    setKey]    = useState(0);
+  const [active,    setActive]    = useState("dashboard");
+  const [key,       setKey]       = useState(0);
+  const [collapsed, setCollapsed] = useState(false);
+
+  const SW = collapsed ? 64 : 220; // sidebar width
 
   const nav = [
     { id:"dashboard", icon:"◈", label:"Dashboard" },
@@ -778,49 +842,67 @@ export default function Page() {
       <div style={{ minHeight:"100vh",background:"#f0f4f9",display:"flex",overflow:"hidden",position:"relative" }}>
         <div className="orb orb1"/><div className="orb orb2"/><div className="orb orb3"/>
 
-        {/* ── Sidebar — fully light ── */}
-        <aside className="sidebar sidebar-light" style={{ position:"fixed",top:0,left:0,bottom:0,width:220,zIndex:50,display:"flex",flexDirection:"column",padding:"28px 16px" }}>
+        {/* ── Sidebar ── */}
+        <aside className={`sidebar sidebar-light${collapsed?" sb-collapsed":""}`}
+          style={{ position:"fixed",top:0,left:0,bottom:0,width:SW,zIndex:50,display:"flex",flexDirection:"column",padding:"24px 12px",overflowX:"hidden" }}>
 
-          {/* Logo */}
-          <div style={{ display:"flex",alignItems:"center",gap:12,padding:"0 8px",marginBottom:36 }}>
-            <div style={{ width:38,height:38,borderRadius:12,background:"rgba(255,255,255,.25)",border:"1px solid rgba(255,255,255,.4)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,color:"#fff",fontWeight:700 }}>✉</div>
-            <div>
-              <p className="fd" style={{ fontSize:17,color:"#fff",fontWeight:700,letterSpacing:"-.02em" }}>InboxAI</p>
-              <p className="fm" style={{ fontSize:9,color:"rgba(255,255,255,.7)",letterSpacing:".12em",fontWeight:600 }}>POWERED BY GROQ</p>
+          {/* Logo row + collapse button */}
+          <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:32,padding:"0 4px",minWidth:0 }}>
+            <div style={{ display:"flex",alignItems:"center",gap:10,minWidth:0,flex:1,overflow:"hidden" }}>
+              <div style={{ width:36,height:36,borderRadius:11,background:"rgba(255,255,255,.25)",border:"1px solid rgba(255,255,255,.4)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:17,color:"#fff",fontWeight:700,flexShrink:0 }}>✉</div>
+              {!collapsed && (
+                <div className="sb-label" style={{ minWidth:0 }}>
+                  <p className="fd" style={{ fontSize:16,color:"#fff",fontWeight:700,letterSpacing:"-.02em",whiteSpace:"nowrap" }}>InboxAI</p>
+                  <p className="fm" style={{ fontSize:8,color:"rgba(255,255,255,.7)",letterSpacing:".12em",fontWeight:600,whiteSpace:"nowrap" }}>POWERED BY GROQ</p>
+                </div>
+              )}
             </div>
+            <button className="collapse-btn" onClick={() => setCollapsed(c => !c)} title={collapsed?"Expand sidebar":"Collapse sidebar"}>
+              {collapsed ? "›" : "‹"}
+            </button>
           </div>
 
           {/* Nav links */}
           <nav style={{ flex:1,display:"flex",flexDirection:"column",gap:2 }}>
-            <p className="fm" style={{ fontSize:9,color:"rgba(255,255,255,.45)",letterSpacing:".15em",padding:"0 12px",marginBottom:8 }}>NAVIGATION</p>
+            {!collapsed && <p className="fm" style={{ fontSize:9,color:"rgba(255,255,255,.45)",letterSpacing:".15em",padding:"0 10px",marginBottom:8 }}>NAVIGATION</p>}
             {nav.map(n => (
-              <button key={n.id} onClick={() => go(n.id)} className={`nav-btn ${active===n.id?"nav-active":""}`}>
-                <span style={{ fontSize:16,color:active===n.id?"#fff":"rgba(255,255,255,.6)",transition:"color .2s" }}>{n.icon}</span>
-                {n.label}
-                {active===n.id && <span style={{ marginLeft:"auto",width:5,height:5,borderRadius:"50%",background:"#fff",display:"inline-block",opacity:.9 }}/>}
+              <button key={n.id} onClick={() => go(n.id)}
+                className={`nav-btn ${active===n.id?"nav-active":""}`}
+                title={collapsed ? n.label : undefined}
+                style={{ justifyContent:collapsed?"center":"flex-start", padding:collapsed?"10px":"10px 12px", gap:collapsed?0:10 }}>
+                <span style={{ fontSize:17,color:active===n.id?"#fff":"rgba(255,255,255,.65)",transition:"color .2s",flexShrink:0 }}>{n.icon}</span>
+                {!collapsed && <span className="sb-label">{n.label}</span>}
+                {!collapsed && active===n.id && <span style={{ marginLeft:"auto",width:5,height:5,borderRadius:"50%",background:"#fff",display:"inline-block",opacity:.9 }}/>}
               </button>
             ))}
           </nav>
 
-          <div style={{ height:1,background:"rgba(255,255,255,.2)",margin:"20px 8px" }}/>
+          <div style={{ height:1,background:"rgba(255,255,255,.2)",margin:"16px 4px" }}/>
 
           {/* Active inboxes */}
           <div>
-            <p className="fm" style={{ fontSize:9,color:"rgba(255,255,255,.45)",letterSpacing:".14em",padding:"0 4px",marginBottom:10 }}>ACTIVE INBOXES</p>
+            {!collapsed && <p className="fm" style={{ fontSize:9,color:"rgba(255,255,255,.45)",letterSpacing:".14em",padding:"0 4px",marginBottom:10 }}>ACTIVE INBOXES</p>}
             {ACCOUNTS.filter(a => a.tracking).map(a => (
-              <div key={a.id} style={{ display:"flex",alignItems:"center",gap:8,padding:"7px 8px",borderRadius:8,cursor:"pointer",transition:"background .2s" }}
+              <div key={a.id}
+                style={{ display:"flex",alignItems:"center",gap:collapsed?0:8,padding:"7px 6px",borderRadius:8,cursor:"pointer",transition:"background .2s",justifyContent:collapsed?"center":"flex-start" }}
+                title={collapsed ? a.email : undefined}
                 onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = "rgba(255,255,255,.15)"}
                 onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = "transparent"}>
-                <div style={{ width:26,height:26,borderRadius:8,background:"rgba(255,255,255,.22)",border:"1px solid rgba(255,255,255,.35)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:"#fff",flexShrink:0 }}>{a.avatar}</div>
-                <p className="fm" style={{ fontSize:11,color:"rgba(255,255,255,.7)",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",flex:1 }}>{a.email}</p>
-                {a.unread>0 && <span className="fm" style={{ fontSize:10,color:"#fff",background:"rgba(255,255,255,.25)",padding:"1px 6px",borderRadius:4,flexShrink:0,fontWeight:600,border:"1px solid rgba(255,255,255,.3)" }}>{a.unread}</span>}
+                <div style={{ width:26,height:26,borderRadius:8,background:"rgba(255,255,255,.22)",border:"1px solid rgba(255,255,255,.35)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:"#fff",flexShrink:0,position:"relative" }}>
+                  {a.avatar}
+                  {collapsed && a.unread>0 && <span style={{ position:"absolute",top:-4,right:-4,width:8,height:8,borderRadius:"50%",background:"#fbbf24",border:"1.5px solid #059669" }}/>}
+                </div>
+                {!collapsed && <>
+                  <p className="fm sb-label" style={{ fontSize:11,color:"rgba(255,255,255,.7)",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",flex:1 }}>{a.email}</p>
+                  {a.unread>0 && <span className="fm" style={{ fontSize:10,color:"#fff",background:"rgba(255,255,255,.25)",padding:"1px 6px",borderRadius:4,flexShrink:0,fontWeight:600,border:"1px solid rgba(255,255,255,.3)" }}>{a.unread}</span>}
+                </>}
               </div>
             ))}
           </div>
         </aside>
 
         {/* ── Main ── */}
-        <main className="main-offset" style={{ flex:1,overflowY:"auto",position:"relative",zIndex:10,paddingLeft:220 }}>
+        <main className="main-offset" style={{ flex:1,overflowY:"auto",position:"relative",zIndex:10,paddingLeft:SW,transition:"padding-left .28s cubic-bezier(.4,0,.2,1)" }}>
           <div key={key} className="main-pad" style={{ maxWidth:960,margin:"0 auto",padding:"48px 40px" }}>
             {active==="dashboard" && <Dashboard/>}
             {active==="calendar"  && <CalendarSection/>}
