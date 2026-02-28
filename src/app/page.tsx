@@ -245,7 +245,7 @@ export default function LoginPage() {
 
         .feat-pill {
           display:flex;align-items:center;gap:10px;
-          padding:10px 14px;border-radius:12px;
+          padding:8px 12px;border-radius:12px;
           background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);
           font-size:13px;color:rgba(255,255,255,.85);
           transition:all .22s;cursor:default;
@@ -271,7 +271,7 @@ export default function LoginPage() {
         <div className="split-left" style={{
           flex: "0 0 52%", position: "relative", overflow: "hidden",
           background: "linear-gradient(160deg,#0f766e 0%,#059669 45%,#0284c7 100%)",
-          display: "flex", flexDirection: "column", padding: "40px 48px",
+          display: "flex", flexDirection: "column", padding: "28px 40px",
           boxShadow: "4px 0 40px rgba(5,150,105,.25)",
         }}>
           <Particles />
@@ -288,22 +288,17 @@ export default function LoginPage() {
 
           {/* Hero */}
           <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", position: "relative", zIndex: 2 }}>
-            <div className="fu d1" style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "6px 14px", borderRadius: 50, background: "rgba(255,255,255,.15)", border: "1px solid rgba(255,255,255,.3)", width: "fit-content", marginBottom: 28 }}>
-              <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#fff", animation: "pulse2 2s infinite", display: "inline-block", flexShrink: 0 }} />
-              <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, color: "rgba(255,255,255,.9)", letterSpacing: ".15em", fontWeight: 600 }}>REAL-TIME AI MONITORING</span>
-            </div>
-
-            <h1 className="fu d2" style={{ fontFamily: "'Playfair Display',serif", fontSize: 48, fontWeight: 700, color: "#fff", lineHeight: 1.15, marginBottom: 20, letterSpacing: "-.01em" }}>
+            <h1 className="fu d2" style={{ fontFamily: "'Playfair Display',serif", fontSize: 38, fontWeight: 700, color: "#fff", lineHeight: 1.12, marginBottom: 14, letterSpacing: "-.01em" }}>
               Your Inbox.<br />
               <em style={{ fontStyle: "italic", color: "rgba(255,255,255,.85)" }}>Always in</em><br />
               <em style={{ fontStyle: "italic", color: "rgba(255,255,255,.85)" }}>Control.</em>
             </h1>
 
-            <p className="fu d3" style={{ fontSize: 14, color: "rgba(255,255,255,.75)", lineHeight: 1.75, maxWidth: 360, marginBottom: 36 }}>
+            <p className="fu d3" style={{ fontSize: 13, color: "rgba(255,255,255,.75)", lineHeight: 1.65, maxWidth: 360, marginBottom: 20 }}>
               Sign in to access AI-powered summaries, auto-scheduled meetings, and intelligent email insights across all your accounts.
             </p>
 
-            <div className="fu d4" style={{ display: "flex", flexDirection: "column", gap: 9, marginBottom: 48 }}>
+            <div className="fu d4" style={{ display: "flex", flexDirection: "column", gap: 7, marginBottom: 20 }}>
               {[
                 { icon: "✦", text: "AI daily & weekly email summaries" },
                 { icon: "◫", text: "Auto-detect and schedule meetings" },
@@ -316,15 +311,15 @@ export default function LoginPage() {
               ))}
             </div>
 
-            <div className="fu d5" style={{ display: "flex", gap: 36, paddingTop: 24, borderTop: "1px solid rgba(255,255,255,.2)" }}>
+            <div className="fu d5" style={{ display: "flex", gap: 0, paddingTop: 18, borderTop: "1px solid rgba(255,255,255,.25)" }}>
               {[
                 { num: "3×",   lbl: "FASTER TRIAGE" },
                 { num: "98%",  lbl: "UPTIME" },
                 { num: "24/7", lbl: "MONITORING" },
               ].map((s, i) => (
-                <div key={i}>
-                  <p style={{ fontFamily: "'Playfair Display',serif", fontSize: 28, fontWeight: 700, color: "#fff", lineHeight: 1 }}>{s.num}</p>
-                  <p style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9, color: "rgba(255,255,255,.55)", marginTop: 4, letterSpacing: ".1em" }}>{s.lbl}</p>
+                <div key={i} style={{ flex: 1 }}>
+                  <p style={{ fontFamily: "'Playfair Display',serif", fontSize: 26, fontWeight: 700, color: "#fff", lineHeight: 1 }}>{s.num}</p>
+                  <p style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9, color: "rgba(255,255,255,.8)", marginTop: 5, letterSpacing: ".06em", fontWeight: 600, whiteSpace: "nowrap" }}>{s.lbl}</p>
                 </div>
               ))}
             </div>
