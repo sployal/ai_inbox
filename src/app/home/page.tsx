@@ -796,7 +796,7 @@ function CalendarSection({ user, accounts }: { user: AuthUser | null; accounts: 
 }
 
 // ─── Accounts ─────────────────────────────────────────────────────────────────
-function AccountsSection({ accounts, onRefresh }: { accounts: ConnectedAccount[]; onRefresh: () => void }) {
+function AccountsSection({ user, accounts, onRefresh }: { user: AuthUser | null; accounts: ConnectedAccount[]; onRefresh: () => void }) {
   const [localAccounts, setLocalAccounts] = useState<ConnectedAccount[]>(accounts);
 
   useEffect(() => { setLocalAccounts(accounts); }, [accounts]);
@@ -813,13 +813,20 @@ function AccountsSection({ accounts, onRefresh }: { accounts: ConnectedAccount[]
     onRefresh();
   };
 
-  const handleSync = async (id: string) => {
-    await fetch("/api/gmail/sync", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ accountId: id, syncType: "manual" }),
-    });
-    onRefresh();
+  const handleSync = async (connectedAccountId: string) => {
+    if (!user) return;
+    try {
+      const res = await fetch("/api/gmail/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ connectedAccountId, userId: user.id }),
+      });
+      if (res.ok) {
+        onRefresh();
+      }
+    } catch (err) {
+      console.error("Sync failed:", err);
+    }
   };
 
   const total  = localAccounts.length;
@@ -1355,7 +1362,7 @@ export default function Page() {
             {active==="dashboard" && <Dashboard user={user} accounts={accounts}/>}
             {active==="calendar"  && <CalendarSection user={user} accounts={accounts}/>}
             {active==="summaries" && <SummariesSection accounts={accounts}/>}
-            {active==="accounts"  && <AccountsSection accounts={accounts} onRefresh={() => user && loadAccounts(user.id)}/>}
+            {active==="accounts"  && <AccountsSection user={user} accounts={accounts} onRefresh={() => user && loadAccounts(user.id)}/>}
             {active==="settings"  && <SettingsSection user={user}/>}
           </div>
         </main>

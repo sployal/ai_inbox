@@ -51,7 +51,7 @@ export async function GET(req: NextRequest) {
 
   try {
     // ── 1. Decode and verify the CSRF state ───────────────────────────────────
-    let stateData: { userId: string; nonce: string };
+    let stateData: { authUserId: string; publicUserId: string; nonce: string };
     try {
       stateData = JSON.parse(Buffer.from(state, "base64url").toString());
     } catch {
@@ -59,11 +59,11 @@ export async function GET(req: NextRequest) {
     }
 
     // Look up the nonce in oauth_states — must exist and not be expired
-    // Schema: oauth_states.user_id references public.users.id
+    // Schema: oauth_states.user_id references auth.users.id
     const { data: oauthState, error: stateError } = await admin
       .from("oauth_states")
       .select("id")
-      .eq("user_id", stateData.userId)
+      .eq("user_id", stateData.authUserId)
       .eq("nonce", stateData.nonce)
       .gt("expires_at", new Date().toISOString())
       .single();
@@ -105,9 +105,9 @@ export async function GET(req: NextRequest) {
       .upsert(
         {
           // ── Identity ──────────────────────────────────────────────────────
-          user_id:           stateData.userId,    // → public.users.id
-          gmail_address:     gmailUser.email,      // the inbox being connected
-          google_account_id: gmailUser.id,         // Google's sub for this Gmail account
+          user_id:           stateData.publicUserId,    // → public.users.id
+          gmail_address:     gmailUser.email,           // the inbox being connected
+          google_account_id: gmailUser.id,              // Google's sub for this Gmail account
 
           // ── Display ───────────────────────────────────────────────────────
           display_name:    gmailUser.name.split(" ")[0] ?? gmailUser.email.split("@")[0],
@@ -153,12 +153,13 @@ export async function GET(req: NextRequest) {
     // ── 6. Fire-and-forget initial sync ──────────────────────────────────────
     // Starts pulling email metadata from Gmail API in the background.
     // The user is redirected immediately — emails appear via realtime subscription.
+    const publicUserId = stateData.publicUserId;
     fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/gmail/sync`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        accountId: upsertedAccount.id,
-        syncType:  "startup",  // schema: sync_logs.sync_type check
+        connectedAccountId: upsertedAccount.id,
+        userId: publicUserId,
       }),
     }).catch((e) => console.error("[gmail/callback] background sync failed:", e));
 

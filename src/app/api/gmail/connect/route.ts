@@ -71,24 +71,25 @@ export async function GET(req: NextRequest) {
       return NextResponse.redirect(new URL("/home?error=user_sync_failed", req.url));
     }
 
-    // publicUser is the public.users row — use its id for oauth_states
+    // publicUser is the public.users row
     const publicUserId: string = publicUser.id;
+    const authUserId: string = user.id; // from auth.users
 
     // ── 3. Generate CSRF nonce ────────────────────────────────────────────────
     const nonce = crypto.randomUUID();
 
-    // State encodes public.users.id so the callback knows which user to associate
+    // State encodes both auth user ID and public user ID so callback can use them
     const state = Buffer.from(
-      JSON.stringify({ userId: publicUserId, nonce })
+      JSON.stringify({ authUserId, publicUserId, nonce })
     ).toString("base64url");
 
     // ── 4. Store nonce in oauth_states ────────────────────────────────────────
-    // Schema: oauth_states(user_id → public.users.id, nonce, expires_at)
+    // Schema: oauth_states(user_id → auth.users.id, nonce, expires_at)
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString(); // 10 min
 
     const { error: stateError } = await admin
       .from("oauth_states")
-      .insert({ user_id: publicUserId, nonce, expires_at: expiresAt });
+      .insert({ user_id: authUserId, nonce, expires_at: expiresAt });
 
     if (stateError) {
       console.error("[gmail/connect] oauth_states insert failed:", stateError);
