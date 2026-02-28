@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase";
 
 // ─── Colors ───────────────────────────────────────────────────────────────────
 const C = {
@@ -136,6 +138,7 @@ function Field({ icon, type, placeholder, value, onChange, error }: FieldProps) 
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 export default function LoginPage() {
+  const router = useRouter();
   const [tab,     setTab]     = useState<"signin" | "signup">("signin");
   const [name,    setName]    = useState("");
   const [email,   setEmail]   = useState("");
@@ -166,27 +169,55 @@ export default function LoginPage() {
     if (Object.keys(errs).length) { setErrors(errs); return; }
     setErrors({}); setLoading(true);
     try {
-      await new Promise(r => setTimeout(r, 1300));
-      setSuccess(true);
+      if (tab === "signup") {
+        const { data: { user }, error } = await supabase.auth.signUp({
+          email,
+          password: pass,
+          options: {
+            data: {
+              full_name: name,
+            }
+          }
+        });
+        if (error) throw error;
+        setSuccess(true);
+        setTimeout(() => router.push("/home"), 1500);
+      } else {
+        const { data: { user }, error } = await supabase.auth.signInWithPassword({
+          email,
+          password: pass,
+        });
+        if (error) throw error;
+        setSuccess(true);
+        setTimeout(() => router.push("/home"), 1500);
+      }
     } catch (err: unknown) {
-      const code = (err as { code?: string })?.code ?? "";
-      if (code.includes("user-not-found") || code.includes("wrong-password"))
+      const errMsg = (err as { message?: string })?.message ?? "";
+      if (errMsg.includes("Invalid login credentials"))
         setErrors({ pass: "Invalid email or password" });
-      else if (code.includes("email-already-in-use"))
+      else if (errMsg.includes("User already registered"))
         setErrors({ email: "Email already in use" });
+      else if (errMsg.includes("Password should be at least 6 characters"))
+        setErrors({ pass: "Password must be at least 6 characters" });
       else
-        setErrors({ general: (err as { message?: string })?.message ?? "Something went wrong" });
+        setErrors({ general: errMsg || "Something went wrong" });
     } finally { setLoading(false); }
   };
 
   const googleAuth = async () => {
     setLoading(true);
     try {
-      await new Promise(r => setTimeout(r, 1100));
-      setSuccess(true);
-    } catch {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/home`,
+        }
+      });
+      if (error) throw error;
+    } catch (err: unknown) {
       setErrors({ general: "Google sign-in failed" });
-    } finally { setLoading(false); }
+      setLoading(false);
+    }
   };
 
   return (
@@ -443,7 +474,7 @@ export default function LoginPage() {
                 <span style={{ position: "absolute", inset: -3, borderRadius: "50%", background: C.green, opacity: 0.35, animation: "pulseRing 2s ease-out infinite" }} />
               </span>
               <p style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9, color: "#94a3b8", letterSpacing: ".12em" }}>
-                PROTECTED BY FIREBASE · AES-256 · INBOXAI 2026
+                POWERED BY SUPABASE · AES-256 · INBOXAI 2026
               </p>
             </div>
 
