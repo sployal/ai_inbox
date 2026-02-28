@@ -126,6 +126,9 @@ const css = `
   .trrow td      { transition:background .15s; }
   .trrow:hover td{ background:#f8fafc; }
 
+  /* ── Calendar responsive grid ── */
+  .cal-grid { display:grid; grid-template-columns:1fr 290px; gap:20px; align-items:start; }
+
   /* ── Bottom nav ── */
   .bottom-nav {
     display:none;position:fixed;bottom:0;left:0;right:0;z-index:100;
@@ -151,6 +154,7 @@ const css = `
     .col3        { grid-template-columns:1fr 1fr!important; }
     .hide-mob    { display:none!important; }
     .title-lg    { font-size:34px!important; }
+    .cal-grid    { grid-template-columns:1fr!important; }
   }
   @media (max-width:460px) {
     .stats-grid  { grid-template-columns:1fr 1fr!important; }
@@ -435,8 +439,8 @@ function CalendarSection() {
     <Section>
       <PageHead title="Calendar" />
 
-      {/* ── Calendar grid + selected date side by side ── */}
-      <div className="fu d1" style={{ display:"grid",gridTemplateColumns:"1fr 290px",gap:20,alignItems:"start" }}>
+      {/* ── Calendar grid + selected date side by side (stacks on mobile) ── */}
+      <div className="fu d1 cal-grid">
 
         {/* Left: main calendar */}
         <div style={{ borderRadius:24,overflow:"hidden",boxShadow:"0 8px 40px rgba(5,150,105,.13),0 2px 8px rgba(0,0,0,.06)" }}>
@@ -507,7 +511,7 @@ function CalendarSection() {
           </div>
         </div>
 
-        {/* Right: selected date panel */}
+        {/* Right: selected date panel (appears below on mobile) */}
         <div style={{ borderRadius:20,overflow:"hidden",boxShadow:"0 4px 24px rgba(0,0,0,.07)" }}>
           <div style={{ background:"linear-gradient(135deg,#f0fdf8,#e0f2fe)",padding:"20px 24px",borderBottom:"1px solid #e2e8f0" }}>
             <p className="fm" style={{ fontSize:9,color:"#94a3b8",letterSpacing:".15em",marginBottom:4 }}>SELECTED DATE</p>
